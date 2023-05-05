@@ -1,0 +1,16 @@
+[package]
+name = "first_package"
+version = "0.0.1"
+# This is the object ID given to the package upon its first publishing.
+# It must be changed with every updated version of the package.
+published-at = "0xdd98ee97d4ece4408686a0d3be58cb4843266d4f68179e50addfc1434bf0f189"
+
+[dependencies]
+Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework/packages/sui-framework", rev = "devnet" }
+
+[addresses]
+# This field must always point to the original package's object ID, but it alternates:
+# 1. Before issuing the `sui client upgrade`, this field goes back to "0x0"
+# 2. After the upgrade is accepted by the network, it reverts to the original packaage's ID
+first_package =  "0xdd98ee97d4ece4408686a0d3be58cb4843266d4f68179e50addfc1434bf0f189"
+sui =  "0000000000000000000000000000000000000000000000000000000000000002"
