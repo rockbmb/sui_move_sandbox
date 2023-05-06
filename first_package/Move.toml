@@ -14,3 +14,13 @@ Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-fram
 # 2. After the upgrade is accepted by the network, it reverts to the original packaage's ID
 first_package =  "0xdd98ee97d4ece4408686a0d3be58cb4843266d4f68179e50addfc1434bf0f189"
 sui =  "0000000000000000000000000000000000000000000000000000000000000002"
+
+# About custom upgrade policies:
+#
+# 1. Any pair of functions that produces an `UpgradeTicket` from an `UpgradeCap` and
+#    consumes an `UpgradeReceipt` to update an `UpgradeCap` constitutes a custom
+#    upgrade policy.
+#
+# 2. The UpgradeCap is the central type responsible for coordinating package upgrades.
+#    Publishing a package creates the UpgradeCap object and upgrading the package
+#    updates that object.
