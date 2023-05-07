@@ -17,6 +17,9 @@
 //! 0xea7f77bb384d3bb1d3b1b1460a4f76dea6aeb8aae91efff717247200b075bfe9
 //! , and then to test `delete`, the `ColorObject` was removed from
 //! global storage.
+//!
+//! Second created `ColorObject`'s id, for further testing:
+//! 0xa1756edd700d4fb82af92a0f58230b0753151627f0398aaa606d5cdc50455224
 
 module tutorial::color_object {
     // object creates an alias to the object module, which allows you to call
@@ -92,6 +95,31 @@ module tutorial::color_object {
     /// To support this, the `ColorObject` module needs to define a transfer function:
     public entry fun transfer(object: ColorObject, recipient: address) {
         transfer::transfer(object, recipient)
+    }
+
+    /// The below
+    /// ```move
+    /// public native fun freeze_object<T: key>(obj: T);
+    /// ```
+    /// from the `sui::tranfer` module function irreversibly turns an object
+    /// immutable.
+    public entry fun freeze_object(object: ColorObject) {
+        transfer::freeze_object(object)
+    }
+
+    /// Create an a priori immutable `ColorObject`
+    public entry fun create_immutable(red: u8, green: u8, blue: u8, ctx: &mut TxContext) {
+        let color_object = new(red, green, blue, ctx);
+        transfer::freeze_object(color_object)
+    }
+
+    public entry fun update(
+        object: &mut ColorObject,
+        red: u8, green: u8, blue: u8,
+    ) {
+        object.red = red;
+        object.green = green;
+        object.blue = blue;
     }
 }
 
@@ -253,6 +281,46 @@ module tutorial::color_object_tests {
         test_scenario::next_tx(scenario, first_owner);
         {
             assert!(!test_scenario::has_most_recent_for_sender<ColorObject>(scenario), 4);
+        };
+
+        test_scenario::end(scenario_val);
+    }
+
+    #[test]
+    fun test_immutable() {
+        let sender1 = @0x1;
+        let scenario_val = test_scenario::begin(sender1);
+        let scenario = &mut scenario_val;
+        {
+            let ctx = test_scenario::ctx(scenario);
+            color_object::create_immutable(255, 0, 255, ctx);
+        };
+
+        test_scenario::next_tx(scenario, sender1);
+        {
+            // take_owned does not work for immutable objects.
+            assert!(!test_scenario::has_most_recent_for_sender<ColorObject>(scenario), 0);
+        };
+
+        // Any sender works, since the object is immutable.
+        let sender2 = @0x2;
+        test_scenario::next_tx(scenario, sender2);
+        {
+            let object = test_scenario::take_immutable<ColorObject>(scenario);
+            let (red, green, blue) = color_object::get_color(&object);
+            assert!(red == 255 && green == 0 && blue == 255, 0);
+            test_scenario::return_immutable(object);
+        };
+
+        test_scenario::next_tx(scenario, sender2);
+        {
+            let object = test_scenario::take_immutable<ColorObject>(scenario);
+            let (red, green, blue) = color_object::get_color(&object);
+            assert!(red == 255 && green == 0 && blue == 255, 0);
+            // Uncommenting the below will result in a failed transaction,
+            // because there would be an attempt to modify an immutable object
+            //color_object::update(&mut object, 0, 0, 0);
+            test_scenario::return_immutable(object);
         };
 
         test_scenario::end(scenario_val);
