@@ -4,6 +4,7 @@ version = "0.0.1"
 published-at = "0x9651bb7b385461909e8e46ad48b9d46737922019073e990f37bca284264d2267"
 
 [dependencies]
+MoveStdlib = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework/packages/move-stdlib", rev = "devnet" }
 Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework/packages/sui-framework", rev = "devnet" }
 
 [addresses]
