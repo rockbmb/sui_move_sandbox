@@ -73,11 +73,17 @@ module tutorial::color_object {
     ///
     /// 1. delete the object
     /// 2. transfer the object
-    public entry fun delete(object: ColorObject) {
+    public fun delete(object: ColorObject) {
         let ColorObject { id, red: _, green: _, blue: _ } = object;
         object::delete(id);
     }
 
+    /// The owner of the object might want to transfer it to another address, instead of
+    /// having to delete it.
+    /// To support this, the `ColorObject` module needs to define a transfer function:
+    public entry fun transfer(object: ColorObject, recipient: address) {
+        transfer::transfer(object, recipient)
+    }
 }
 
 #[test_only]
@@ -189,6 +195,55 @@ module tutorial::color_object_tests {
         test_scenario::next_tx(scenario, owner);
         {
             assert!(!test_scenario::has_most_recent_for_sender<ColorObject>(scenario), 1);
+        };
+
+        test_scenario::end(scenario_val);
+    }
+
+    #[test]
+    fun test_transfer() {
+        let first_owner = @0x1;
+        // Create a ColorObject and transfer it to @first_owner.
+        let scenario_val = test_scenario::begin(first_owner);
+        let scenario = &mut scenario_val;
+        {
+            let ctx = test_scenario::ctx(scenario);
+            color_object::create(255, 0, 255, ctx);
+        };
+
+
+        let second_owner = @0x2;
+        // Check that the future owner does not yet have ownership
+        test_scenario::next_tx(scenario, second_owner);
+        {
+            assert!(!test_scenario::has_most_recent_for_sender<ColorObject>(scenario), 0);
+        };
+
+        // Transfer the object
+        test_scenario::next_tx(scenario, first_owner);
+        {
+            let object = test_scenario::take_from_sender<ColorObject>(scenario);
+            let (red, green, blue) = color_object::get_color(&object);
+            assert!(red == 255 && green == 0 && blue == 255, 1);
+
+            //
+            color_object::transfer(object, second_owner);
+        };
+
+        // Check that the new owner is, in fact, in possession of the object
+        test_scenario::next_tx(scenario, second_owner);
+        {
+            assert!(test_scenario::has_most_recent_for_sender<ColorObject>(scenario), 2);
+            let object = test_scenario::take_from_sender<ColorObject>(scenario);
+            let (red, green, blue) = color_object::get_color(&object);
+            assert!(red == 255 && green == 0 && blue == 255, 3);
+            test_scenario::return_to_sender(scenario, object);
+        };
+
+        // Check that the past owner no longer has ownership
+        test_scenario::next_tx(scenario, first_owner);
+        {
+            assert!(!test_scenario::has_most_recent_for_sender<ColorObject>(scenario), 4);
         };
 
         test_scenario::end(scenario_val);
