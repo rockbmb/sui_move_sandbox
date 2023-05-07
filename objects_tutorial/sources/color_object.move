@@ -1,6 +1,9 @@
+//! Devnet test notes:
 //! Published by address 0x7b92450cdc8de8d032a4310934e34f64b4a16abc82f470514a57f0c25071c575
-//! on the devnet, with original package ID
-//! 0x74e8bb81b4f74ccb8421610f61a18fba08a5f0fd762679650e780647ab26c04b
+//! with original package ID
+//! 0x74e8bb81b4f74ccb8421610f61a18fba08a5f0fd762679650e780647ab26c04b,
+//! second package ID
+//! 0x22bc110203426930b25e7d8e1439409c4bd4325295ef6b2d4f141f8f75e4f4da,
 //! and `UpgradeCap` ID
 //! 0x5f2d7f3014863e27da6fafa9992814d7e0fbeee963ec615c25f08dc95c30f6c7
 //!
@@ -8,6 +11,12 @@
 //! in the creation of object
 //! 0xb393ca07d1b60bf2519f2c4dbe300b2608975feb0e3e56e1232f74abbe785a76
 //! representing a `ColorObject`.
+//! To test `transfer`, this `ColorObject` was transferred from
+//! 0x7b92450cdc8de8d032a4310934e34f64b4a16abc82f470514a57f0c25071c575
+//! to
+//! 0xea7f77bb384d3bb1d3b1b1460a4f76dea6aeb8aae91efff717247200b075bfe9
+//! , and then to test `delete`, the `ColorObject` was removed from
+//! global storage.
 
 module tutorial::color_object {
     // object creates an alias to the object module, which allows you to call

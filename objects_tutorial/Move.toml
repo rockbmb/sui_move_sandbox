@@ -1,7 +1,7 @@
 [package]
 name = "Tutorial"
 version = "0.0.1"
-published-at = "0x74e8bb81b4f74ccb8421610f61a18fba08a5f0fd762679650e780647ab26c04b"
+published-at = "0x22bc110203426930b25e7d8e1439409c4bd4325295ef6b2d4f141f8f75e4f4da"
 
 [dependencies]
 Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework/packages/sui-framework", rev = "devnet" }
