@@ -60,6 +60,24 @@ module tutorial::color_object {
         into_object.green = from_object.green;
         into_object.blue = from_object.blue;
     }
+
+    /// IMPORTANT
+    /// Since every Sui object struct type **must** include UID as its first field,
+    /// and the UID struct does not have the drop ability, the Sui object struct
+    /// type **cannot** have the drop ability either!
+    ///
+    /// Hence, any Sui object cannot be arbitrarily dropped and must be either
+    /// consumed (for example, transferred to another owner) or deleted by
+    /// unpacking, as described in the following sections.
+    /// There are two ways to handle a pass-by-value Sui object in Move:
+    ///
+    /// 1. delete the object
+    /// 2. transfer the object
+    public entry fun delete(object: ColorObject) {
+        let ColorObject { id, red: _, green: _, blue: _ } = object;
+        object::delete(id);
+    }
+
 }
 
 #[test_only]
@@ -139,6 +157,38 @@ module tutorial::color_object_tests {
             // > returns
             // >
             test_scenario::return_to_sender(scenario, obj1);
+        };
+
+        test_scenario::end(scenario_val);
+    }
+
+    #[test]
+    fun test_delete() {
+        let owner = @0x1;
+        // Create a ColorObject and transfer it to @owner.
+        let scenario_val = test_scenario::begin(owner);
+        let scenario = &mut scenario_val;
+        let id = {
+            let ctx = test_scenario::ctx(scenario);
+            color_object::create(255, 0, 255, ctx);
+            let id = object::id_from_address(tx_context::last_created_object_id(ctx));
+            id
+        };
+
+        // Delete the ColorObject just created.
+        test_scenario::next_tx(scenario, owner);
+        {
+            let object = test_scenario::take_from_sender_by_id<ColorObject>(scenario, id);
+            let (red, green, blue) = color_object::get_color(&object);
+            assert!(red == 255 && green == 0 && blue == 255, 0);
+
+            color_object::delete(object);
+        };
+
+        // Verify that the object was indeed deleted.
+        test_scenario::next_tx(scenario, owner);
+        {
+            assert!(!test_scenario::has_most_recent_for_sender<ColorObject>(scenario), 1);
         };
 
         test_scenario::end(scenario_val);
