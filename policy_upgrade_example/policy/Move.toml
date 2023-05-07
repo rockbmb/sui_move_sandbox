@@ -4,7 +4,7 @@ version = "0.0.1"
 published-at = "0x911a11d99dfe9dc4bec24bfb669636445a68c2763f67b902dee03cfa1557a8c1"
 
 [dependencies]
-Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework/packages/sui-framework", rev = "testnet" }
+Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework/packages/sui-framework", rev = "devnet" }
 
 [addresses]
 policy =  "0x911a11d99dfe9dc4bec24bfb669636445a68c2763f67b902dee03cfa1557a8c1"
