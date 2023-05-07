@@ -43,12 +43,31 @@ module tutorial::color_object {
             blue,
         }
     }
+
+    /// IMPORTANT
+    ///
+    /// Although `from_object` is a read-only reference in this transaction, it is
+    /// still a mutable object in Sui storage--another transaction could be sent
+    /// to mutate the object at the same time.
+    /// 
+    /// To prevent this, Sui must lock any mutable object used as a
+    /// transaction input, even when it's passed as a read-only reference.
+    /// 
+    /// In addition, only an object's owner can send a transaction that
+    /// locks the object.
+    public entry fun copy_into(from_object: &ColorObject, into_object: &mut ColorObject) {
+        into_object.red = from_object.red;
+        into_object.green = from_object.green;
+        into_object.blue = from_object.blue;
+    }
 }
 
 #[test_only]
 module tutorial::color_object_tests {
     use sui::test_scenario;
     use tutorial::color_object::{Self, ColorObject};
+    use sui::object;
+    use sui::tx_context;
 
     #[test]
     fun test_create() {
@@ -78,6 +97,50 @@ module tutorial::color_object_tests {
             assert!(red == 255 && green == 0 && blue == 255, 1);
             test_scenario::return_to_sender(scenario, object);
         };
+        test_scenario::end(scenario_val);
+    }
+
+    #[test]
+    fun test_copy_into() {
+        let owner = @0x1;
+        let scenario_val = test_scenario::begin(owner);
+        let scenario = &mut scenario_val;
+        let (id1, id2) = {
+            let ctx = test_scenario::ctx(scenario);
+            color_object::create(255, 255, 255, ctx);
+            let id1 = object::id_from_address(tx_context::last_created_object_id(ctx));
+            color_object::create(0, 0, 0, ctx);
+            let id2 = object::id_from_address(tx_context::last_created_object_id(ctx));
+            (id1, id2)
+        };
+
+        test_scenario::next_tx(scenario, owner);
+        {
+            let obj1 = test_scenario::take_from_sender_by_id<ColorObject>(scenario, id1);
+            let obj2 = test_scenario::take_from_sender_by_id<ColorObject>(scenario, id2);
+            let (red, green, blue) = color_object::get_color(&obj1);
+            assert!(red == 255 && green == 255 && blue == 255, 0);
+
+            color_object::copy_into(&obj2, &mut obj1);
+            test_scenario::return_to_sender(scenario, obj1);
+            test_scenario::return_to_sender(scenario, obj2);
+        };
+
+        test_scenario::next_tx(scenario, owner);
+        {
+            let obj1 = test_scenario::take_from_sender_by_id<ColorObject>(scenario, id1);
+            let (red, green, blue) = color_object::get_color(&obj1);
+            assert!(red == 0 && green == 0 && blue == 0, 1);
+            // Don't forget to have the below line on objects that don't implement `drop`,
+            // or else the following error occurs:
+            // >
+            // > The local variable 'obj1' still contains a value. The value does
+            // > not have the 'drop' ability and must be consumed before the function
+            // > returns
+            // >
+            test_scenario::return_to_sender(scenario, obj1);
+        };
+
         test_scenario::end(scenario_val);
     }
 }
