@@ -74,6 +74,7 @@ module tutorial::color_object {
     }
 
     /// IMPORTANT
+    ///
     /// Since every Sui object struct type **must** include UID as its first field,
     /// and the UID struct does not have the drop ability, the Sui object struct
     /// type **cannot** have the drop ability either!
