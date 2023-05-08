@@ -1,5 +1,13 @@
-// Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+//! Copyright (c) Mysten Labs, Inc.
+//! SPDX-License-Identifier: Apache-2.0
+//!
+//! Devnet testing notes:
+//! Published at
+//! 0xd9126e54756430969e511b81d5cdadca3d19e9557e1ea2cb02df8092720d13cc
+//! with `UpgradeCap`
+//! 0x7b25e406fce3fd7cb6f0f2b5afc8cde80042de6d9ee11e00ca202f8c38c9bd4b
+//! by address
+//! 0x7b92450cdc8de8d032a4310934e34f64b4a16abc82f470514a57f0c25071c575
 
 /// An escrow for atomic swap of objects that trusts a third party for liveness, but not safety.
 module defi::escrow {

@@ -1,9 +1,10 @@
 [package]
 name = "DeFi"
 version = "0.0.1"
+published-at = "0xd9126e54756430969e511b81d5cdadca3d19e9557e1ea2cb02df8092720d13cc"
 
 [dependencies]
 Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework/packages/sui-framework", rev = "devnet" }
 
 [addresses]
-defi = "0x0"
+defi = "0xd9126e54756430969e511b81d5cdadca3d19e9557e1ea2cb02df8092720d13cc"
