@@ -9,11 +9,13 @@ using the [`sui` CLI](https://docs.sui.io/build/cli-client)
 ## Structure
 
 The notes and example packages were written while using the following sources:
+
 1. The previously linked [series of pages](https://docs.sui.io/build/move) on smart contracts in Sui Move
 2. A [series of articles](https://docs.sui.io/build/programming-with-objects) on the Sui documentation on working with Sui Move object
 3. The [set of working examples](https://github.com/MystenLabs/sui/tree/main/sui_programmability/examples) showcasing Sui Move packages
 
 In particular:
+
 * the `first_package` package is a walkthrough of the resources in 1., containing
   - some experiments from [working with time in Sui Move](https://docs.sui.io/build/move/time)
   - a walkthrough of ["Write a Sui Move Package"](https://docs.sui.io/build/move/write-package)
@@ -39,15 +41,15 @@ An example note regarding the nature of Sui Move packages as indistinct from obj
 
 > 
 > IMPORTANT
-> 
+>
 > 1. Sui smart contracts are represented by immutable package objects consisting of a
 >    collection of Move modules.
-> 
+>
 > 2. Because the packages are immutable, transactions can safely access smart contracts
 >    without full consensus (fast-path transactions).
 >    - If someone could change these packages, they would become **shared** objects, which
 >      would require full consensus before completing a transaction.
->      
+>
 > 3. When you create packages that involve shared objects, you need to think about
 >    upgrades and versioning from the start given that all prior versions of a
 >    package still exist on-chain.
