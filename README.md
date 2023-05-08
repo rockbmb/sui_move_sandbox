@@ -23,3 +23,36 @@ In particular:
 * in the `objects_tutorial` package, the same as above:
   - code from the chapters contained in 3., from 1 through 6 with unit tests, and deployed on the devnet
 
+## Example of reader's note
+
+Throughout the repository, I left notes that I believe are important highlights of the content
+that particular package/module refers to.
+They're marked with the word
+
+>
+> IMPORTANT
+>
+
+to allow easy search via e.g. an editor's `CTRL + SHIFT + F`.
+
+An example note regarding the nature of Sui Move packages as indistinct from objects:
+
+> 
+> IMPORTANT
+> 
+> 1. Sui smart contracts are represented by immutable package objects consisting of a
+>    collection of Move modules.
+> 
+> 2. Because the packages are immutable, transactions can safely access smart contracts
+>    without full consensus (fast-path transactions).
+>    - If someone could change these packages, they would become **shared** objects, which
+>      would require full consensus before completing a transaction.
+>      
+> 3. When you create packages that involve shared objects, you need to think about
+>    upgrades and versioning from the start given that all prior versions of a
+>    package still exist on-chain.
+>    - A useful pattern is to introduce **versioning** to the shared object and using
+>      a version check to guard access to functions in the package.
+>    - This enables you to limit access to the shared object to only the latest version of
+>      a package.
+>
