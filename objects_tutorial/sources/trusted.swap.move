@@ -42,6 +42,29 @@ module tutorial::trusted_swap {
         transfer::transfer(object, recipient)
     }
 
+    /// Example of how an escrow service could exfiltrate entrusted `Object`s
+    /// if the object security protocols described in chapter 4 were not followed.
+    ///
+    /// All that needs to happen for this to be entirely prevented is to move `Object`
+    /// to a separate module.
+     public fun steal_obj(
+        wrapper: ObjectWrapper,
+        thief: address,
+        ctx: &mut TxContext
+    ) {
+        let ObjectWrapper {
+            id: id,
+            original_owner: _original_owner,
+            to_swap: object,
+            fee: fee,
+        } = wrapper;
+
+        object::delete(id);
+
+        transfer::public_transfer(coin::from_balance(fee, ctx), thief);
+        transfer::transfer(object, thief);
+    }
+
     struct ObjectWrapper has key {
         id: UID,
         original_owner: address,
@@ -69,9 +92,35 @@ module tutorial::trusted_swap {
         transfer::transfer(wrapper, service_address);
     }
 
-    /// Since the contract defined only one way to deal with ObjectWrapper -
-    /// `execute_swap` - there is no other way the service operator can interact with
-    /// ObjectWrapper despite its ownership.
+    /// From chapter 4, on object wrapping and its security implications for
+    /// third-party escrow services:
+    ///
+    /// >
+    /// > Although the service operator `service_address` now owns the ObjectWrapper,
+    /// > which contains the object to be swapped, the service operator still cannot
+    /// > access or steal the underlying wrapped Object.
+    /// > 
+    /// > This is because the transfer_object function you defined requires you to pass an
+    /// > Object into it; but the service operator cannot access the wrapped Object, and
+    /// > passing ObjectWrapper to the transfer_object function would be invalid.
+    /// > 
+    /// > Recall that an object can be read or modified only by the module in which it is
+    /// > defined; because this module defines only a wrapping / packing function
+    /// > `request_swap`, and not an unwrapping / unpacking function, the service operator
+    /// > has no way to unpack the ObjectWrapper to retrieve the wrapped Object.
+    /// >
+    /// > Also, ObjectWrapper itself lacks any defined transfer method, so the service
+    /// > operator cannot transfer the wrapped object to someone else either.
+    /// > Since the contract defined only one way to deal with ObjectWrapper -
+    /// > `execute_swap` - there is no other way the service operator can interact with
+    /// > ObjectWrapper despite its ownership.
+    /// >
+    ///
+    /// Keep in mind that for this to work, `Object` and `ObjectWrapper` would need
+    /// to live in separate modules, ideally separate packages.
+    /// See `fun steal()` above for an example of how a service could steal objects in
+    /// escrow, if this were a real example.
+    ///
     public entry fun execute_swap(
         wrapper1: ObjectWrapper,
         wrapper2: ObjectWrapper,
@@ -101,7 +150,7 @@ module tutorial::trusted_swap {
         // Fee for the service provider
         let service_address = tx_context::sender(ctx);
         balance::join(&mut fee1, fee2);
-        transfer::transfer(coin::from_balance(fee1, ctx), service_address);
+        transfer::public_transfer(coin::from_balance(fee1, ctx), service_address);
 
         // Delete both wrapped objects:
         object::delete(id1);
