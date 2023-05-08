@@ -24,6 +24,7 @@ In particular:
   of the Sui Move chapter on [custom package upgrage policies](https://docs.sui.io/build/custom-upgrade-policy)
 * in the `objects_tutorial` package, the same as above:
   - code from the chapters contained in 3., from 1 through 6 with unit tests, and deployed on the devnet
+* the `defi` package contains a simple example of an escrow, taken from 3.
 
 ## Example of reader's note
 

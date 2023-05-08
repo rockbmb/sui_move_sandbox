@@ -6,6 +6,7 @@ Taken from the [`sui`](https://github.com/MystenLabs/sui/tree/main/sui_programma
 ## How the escrow was tested
 
 Assuming
+* a devnet environment setup
 * a trade between Alice, Bob, and a third party
 * the package has already been published
 * the `simple_warrior` module has been used to create items, a `Sword` for Alice and a `Shield` for Bob
