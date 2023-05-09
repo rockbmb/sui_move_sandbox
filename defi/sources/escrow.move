@@ -8,6 +8,10 @@
 //! 0x7b25e406fce3fd7cb6f0f2b5afc8cde80042de6d9ee11e00ca202f8c38c9bd4b
 //! by address
 //! 0x7b92450cdc8de8d032a4310934e34f64b4a16abc82f470514a57f0c25071c575
+//!
+//! 2023-05-09
+//! Package updated to
+//! 0xabf9254a4b57dc6fda8564fd8de70b6cd1bb2f4cbfbeb71406febadfc27a8005
 
 /// An escrow for atomic swap of objects that trusts a third party for liveness, but not safety.
 module defi::escrow {
