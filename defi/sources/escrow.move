@@ -13,6 +13,23 @@
 //! Package updated to
 //! 0xabf9254a4b57dc6fda8564fd8de70b6cd1bb2f4cbfbeb71406febadfc27a8005
 
+/*
+IMPORTANT
+
+When calling `entry fun`s that have generic type parameters, it is **necessary**
+to instantiate those arguments in the CLI/RPC transaction call!
+
+This is done via the `--type-args <TypeTag>` switch in `sui client call`.
+
+A `TypeTag`, in the case of this module, would be something like
+
+```
+<package_id>::<module_name>::<type_identifier>
+```
+
+and there would be an instance of each of these for every generic type parameter.
+*/
+
 /// An escrow for atomic swap of objects that trusts a third party for liveness, but not safety.
 module defi::escrow {
     use sui::object::{Self, ID, UID};
@@ -41,9 +58,8 @@ module defi::escrow {
     /// The `exchange_for` fields of the two escrowed objects do not match
     const EMismatchedExchangeObject: u64 = 1;
 
-    /// Create an escrow for exchanging goods with
-    /// `counterparty`, mediated by a `third_party`
-    /// that is trusted for liveness
+    /// Create an escrow for exchanging goods with `recipient`, mediated by
+    /// a `third_party` that is trusted for liveness
     public entry fun create<T: key + store, ExchangeForT: key + store>(
         recipient: address,
         third_party: address,
