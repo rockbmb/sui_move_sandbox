@@ -160,6 +160,8 @@ Assuming
 
 run the following instructions
 
+### Owned Escrow
+
 ```bash
 sui client switch --address "$ALICE"
 sui client call \
@@ -202,3 +204,11 @@ sui client call \
 sui client switch --address "$THIRDPARTY"
 sui client call --package $PACKAGE --module escrow --function swap --args $SWORD_ESCROW $SHIELD_ESCROW --gas-budget 10000000 --type-args "$PACKAGE::simple_warrior::Sword" "$PACKAGE::simple_warrior::Shield"
 ```
+
+### Shared Escrow
+
+This version lives in the `shared_escrow.move` module, and unlike the other, is
+a Sui Move object that has no owner, requiring no third-party.
+
+The API is slightly different, but the general pattern of invocation remains,
+just without the third-party.
