@@ -3,7 +3,7 @@
 //!
 //! Devnet testing notes:
 //! Published at
-//! 0xd9126e54756430969e511b81d5cdadca3d19e9557e1ea2cb02df8092720d13cc
+//! 0xabf9254a4b57dc6fda8564fd8de70b6cd1bb2f4cbfbeb71406febadfc27a8005
 //! with `UpgradeCap`
 //! 0x7b25e406fce3fd7cb6f0f2b5afc8cde80042de6d9ee11e00ca202f8c38c9bd4b
 //! by address

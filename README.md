@@ -148,35 +148,57 @@ Assuming
 * a devnet environment setup
 * two fictional parties, Alice and Bob, wish to trade an item, and mediate that trade via a third party
 * the package has already been published
-* the `simple_warrior` module will be used to create items, a `Sword` for Alice and a `Shield` for Bob
+* the `simple_warrior` module, in the `defi` package for this purpose, will be used to create items
+  - a `Sword` for Alice, and
+  - a `Shield` for Bob
 * The shell variables
   - `ALICE`
   - `BOB`
   - `THIRDPARTY`
   - `PACKAGE`
-  - `SWORD`
-  - `SHIELD`
-
   containing Sui object IDs have been/will be `export`, and are/will be available
 
-run the following instructions (WIP)
+run the following instructions
 
 ```bash
 sui client switch --address "$ALICE"
-sui client call --function create_sword --module simple_warrior --package "$PACKAGE" --args 100 --gas-budget 10000000
+sui client call \
+  --function create_sword \
+  --module simple_warrior \
+  --package "$PACKAGE" \
+  --args 100 \
+  --gas-budget 10000000
 # place the created sword's address in $SWORD
 
 sui client switch --address "$BOB"
-sui client call --function create_shield --module simple_warrior --package "$PACKAGE" --args 100 --gas-budget 10000000
-# same for the shield
+sui client call \
+  --function create_shield \
+  --module simple_warrior \
+  --package "$PACKAGE" \
+  --args 100 \
+  --gas-budget 10000000
+# same for the shield, in $SHIELD
 
 sui client switch --address "$ALICE"
-sui client call --function create --module escrow --package "$PACKAGE" --args "$BOB" "$THIRDPARTY" "$SHIELD" "$SWORD" --gas-budget 10000000
+sui client call \
+  --function create \
+  --module escrow \
+  --package "$PACKAGE" \
+  --args "$BOB" "$THIRDPARTY" "$SWORD" "$SHIELD" \
+  --type-args "$PACKAGE::simple_warrior::Sword" "$PACKAGE::simple_warrior::Shield" \
+  --gas-budget 10000000
+# let the escrow object above be exported as `SWORD_ESCROW`
 
 sui client switch --address "$BOB"
-sui client call --function create --module escrow --package "$PACKAGE" --args "$BOB" "$THIRDPARTY" "$SWORD" "$SHIELD" --gas-budget 10000000
+sui client call \
+  --function create \
+  --module escrow \
+  --package "$PACKAGE" \
+  --args "$ALICE" "$THIRDPARTY" "$SHIELD" "$SWORD" \
+  --type-args "$PACKAGE::simple_warrior::Shield" "$PACKAGE::simple_warrior::Sword" \
+  --gas-budget 10000000
+# let the escrow object above be exported as `SHIELD_ESCROW`
 
 sui client switch --address "$THIRDPARTY"
-...
-
+sui client call --package $PACKAGE --module escrow --function swap --args $SWORD_ESCROW $SHIELD_ESCROW --gas-budget 10000000 --type-args "$PACKAGE::simple_warrior::Sword" "$PACKAGE::simple_warrior::Shield"
 ```

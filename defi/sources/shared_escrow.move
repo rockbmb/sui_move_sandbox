@@ -43,7 +43,7 @@ module defi::shared_escrow {
         let id = object::new(ctx);
         let escrowed = option::some(escrowed_item);
         transfer::public_share_object(
-            EscrowedObj<T,ExchangeForT> {
+            EscrowedObj<T, ExchangeForT> {
                 id, creator, recipient, exchange_for, escrowed
             }
         );
