@@ -21,6 +21,10 @@ module defi::simple_warrior {
         transfer::transfer(sword, tx_context::sender(ctx))
     }
 
+    public fun sword_id(sw: &Sword): &UID {
+        &sw.id
+    }
+
     public entry fun create_shield(armor: u8, ctx: &mut TxContext) {
         let shield = Shield {
             id: object::new(ctx),

@@ -157,16 +157,18 @@ Assuming
   - `SWORD`
   - `SHIELD`
 
-  have been `export`ed, and are available
+  containing Sui object IDs have been/will be `export`, and are/will be available
 
 run the following instructions (WIP)
 
 ```bash
 sui client switch --address "$ALICE"
 sui client call --function create_sword --module simple_warrior --package "$PACKAGE" --args 100 --gas-budget 10000000
+# place the created sword's address in $SWORD
 
 sui client switch --address "$BOB"
 sui client call --function create_shield --module simple_warrior --package "$PACKAGE" --args 100 --gas-budget 10000000
+# same for the shield
 
 sui client switch --address "$ALICE"
 sui client call --function create --module escrow --package "$PACKAGE" --args "$BOB" "$THIRDPARTY" "$SHIELD" "$SWORD" --gas-budget 10000000

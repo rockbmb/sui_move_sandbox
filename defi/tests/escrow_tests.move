@@ -3,10 +3,13 @@
 
 #[test_only]
 module defi::escrow_tests {
-    use sui::object::{Self, UID};
+    use sui::object::{Self, ID, UID};
     use sui::test_scenario::{Self, Scenario};
 
     use defi::escrow::{Self, EscrowedObj};
+    use defi::simple_warrior;
+
+    use std::debug;
 
     const ALICE_ADDRESS: address = @0xACE;
     const BOB_ADDRESS: address = @0xACEB;
@@ -25,6 +28,31 @@ module defi::escrow_tests {
     // Example of the other object type used for exchange
     struct ItemB has key, store {
         id: UID
+    }
+
+    #[test]
+    /// Check whether an object's ID is displayed the same way as its UID.
+    /// This was part of an attempt to solve a problem when creating an `EscrowedObj`.
+    fun id_vs_uid() {
+        let new_scenario = test_scenario::begin(ALICE_ADDRESS);
+        let scenario = &mut new_scenario;
+
+        test_scenario::next_tx(scenario, ALICE_ADDRESS);
+        {
+            simple_warrior::create_sword(100, test_scenario::ctx(scenario));
+        };
+
+        test_scenario::next_tx(scenario, ALICE_ADDRESS);
+        {
+            let sword = test_scenario::take_from_sender<simple_warrior::Sword>(scenario);
+            let sword_id: &UID = simple_warrior::sword_id(&sword);
+            debug::print(sword_id);
+            let id: ID = object::id(&sword);
+            debug::print(&id);
+            test_scenario::return_to_sender(scenario, sword)
+        };
+
+        test_scenario::end(new_scenario);
     }
 
     #[test]
