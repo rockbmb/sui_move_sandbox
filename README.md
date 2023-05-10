@@ -186,7 +186,7 @@ sui client call \
   --function create \
   --module escrow \
   --package "$PACKAGE" \
-  --args "$BOB" "$THIRDPARTY" "$SWORD" "$SHIELD" \
+  --args "$BOB" "$THIRDPARTY" "$SHIELD" "$SWORD" \
   --type-args "$PACKAGE::simple_warrior::Sword" "$PACKAGE::simple_warrior::Shield" \
   --gas-budget 10000000
 # let the escrow object above be exported as `SWORD_ESCROW`
@@ -196,7 +196,7 @@ sui client call \
   --function create \
   --module escrow \
   --package "$PACKAGE" \
-  --args "$ALICE" "$THIRDPARTY" "$SHIELD" "$SWORD" \
+  --args "$ALICE" "$THIRDPARTY" "$SWORD" "$SHIELD" \
   --type-args "$PACKAGE::simple_warrior::Shield" "$PACKAGE::simple_warrior::Sword" \
   --gas-budget 10000000
 # let the escrow object above be exported as `SHIELD_ESCROW`
