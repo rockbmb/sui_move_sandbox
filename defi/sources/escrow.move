@@ -53,10 +53,14 @@ module defi::escrow {
     }
 
     // Error codes
-    /// The `sender` and `recipient` of the two escrowed objects do not match
-    const EMismatchedSenderRecipient: u64 = 0;
+    /// The `sender` of the first escrow object and `recipient` of the second
+    /// escrow object do not match
+    const EMismatchedSenderRecipient1: u64 = 0;
+    /// The `sender` of the second escrow object and `recipient` of the first
+    /// escrow object do not match
+    const EMismatchedSenderRecipient2: u64 = 1;
     /// The `exchange_for` fields of the two escrowed objects do not match
-    const EMismatchedExchangeObject: u64 = 1;
+    const EMismatchedExchangeObject: u64 = 2;
 
     /// Create an escrow for exchanging goods with `recipient`, mediated by
     /// a `third_party` that is trusted for liveness
@@ -100,8 +104,8 @@ module defi::escrow {
         object::delete(id1);
         object::delete(id2);
         // check sender/recipient compatibility
-        assert!(&sender1 == &recipient2, EMismatchedSenderRecipient);
-        assert!(&sender2 == &recipient1, EMismatchedSenderRecipient);
+        assert!(&sender1 == &recipient2, EMismatchedSenderRecipient1);
+        assert!(&sender2 == &recipient1, EMismatchedSenderRecipient2);
         // check object ID compatibility
         assert!(object::id(&escrowed1) == exchange_for2, EMismatchedExchangeObject);
         assert!(object::id(&escrowed2) == exchange_for1, EMismatchedExchangeObject);

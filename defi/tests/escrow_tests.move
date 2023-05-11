@@ -105,7 +105,7 @@ module defi::escrow_tests {
     }
 
     #[test]
-    #[expected_failure(abort_code = escrow::EMismatchedSenderRecipient)]
+    #[expected_failure(abort_code = escrow::EMismatchedSenderRecipient2)]
     fun test_swap_wrong_recipient1() {
         // Both Alice and Bob send items to the third party except that Alice put a different
         // recipient than Bob
@@ -115,7 +115,7 @@ module defi::escrow_tests {
     }
 
     #[test]
-    #[expected_failure(abort_code = escrow::EMismatchedSenderRecipient)]
+    #[expected_failure(abort_code = escrow::EMismatchedSenderRecipient1)]
     fun test_swap_wrong_recipient2() {
         // Both Alice and Bob send items to the third party except that Bob put a different
         // recipient than Alice
@@ -125,7 +125,7 @@ module defi::escrow_tests {
     }
 
     #[test]
-    #[expected_failure(abort_code = escrow::EMismatchedSenderRecipient)]
+    #[expected_failure(abort_code = escrow::EMismatchedSenderRecipient1)]
     fun test_swap_wrong_recipient_both() {
         // Both Alice and Bob send items to the third party, except both also use
         // an incorrect recipient addresses.
@@ -137,6 +137,8 @@ module defi::escrow_tests {
     fun swap(scenario: &mut Scenario, third_party: address) {
         test_scenario::next_tx(scenario, third_party);
         {
+            // `test_scenario::take_from_sender` operates like a stack, popping from
+            // the addresses' list of owned objects.
             let item_a = test_scenario::take_from_sender<EscrowedObj<ItemA, ItemB>>(scenario);
             let item_b = test_scenario::take_from_sender<EscrowedObj<ItemB, ItemA>>(scenario);
             escrow::swap(item_a, item_b);
