@@ -59,8 +59,12 @@ module defi::escrow {
     /// The `sender` of the second escrow object and `recipient` of the first
     /// escrow object do not match
     const EMismatchedSenderRecipient2: u64 = 1;
-    /// The `exchange_for` fields of the two escrowed objects do not match
-    const EMismatchedExchangeObject: u64 = 2;
+    /// The ID of the first escrow object does not match the ID of the
+    /// second escrow's `exchange_for` field.
+    const EMismatchedExchangeObject1: u64 = 2;
+    /// The ID of the second escrow object does not match the ID of the
+    /// first escrow's `exchange_for` field.
+    const EMismatchedExchangeObject2: u64 = 3;
 
     /// Create an escrow for exchanging goods with `recipient`, mediated by
     /// a `third_party` that is trusted for liveness
@@ -107,8 +111,8 @@ module defi::escrow {
         assert!(&sender1 == &recipient2, EMismatchedSenderRecipient1);
         assert!(&sender2 == &recipient1, EMismatchedSenderRecipient2);
         // check object ID compatibility
-        assert!(object::id(&escrowed1) == exchange_for2, EMismatchedExchangeObject);
-        assert!(object::id(&escrowed2) == exchange_for1, EMismatchedExchangeObject);
+        assert!(object::id(&escrowed1) == exchange_for2, EMismatchedExchangeObject1);
+        assert!(object::id(&escrowed2) == exchange_for1, EMismatchedExchangeObject2);
         // everything matches. do the swap!
         transfer::public_transfer(escrowed1, sender2);
         transfer::public_transfer(escrowed2, sender1)

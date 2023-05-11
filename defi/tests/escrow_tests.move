@@ -95,11 +95,31 @@ module defi::escrow_tests {
     }
 
     #[test]
-    #[expected_failure(abort_code = escrow::EMismatchedExchangeObject)]
-    fun test_swap_wrong_objects() {
+    #[expected_failure(abort_code = escrow::EMismatchedExchangeObject2)]
+    fun test_swap_wrong_objects1() {
         // Both Alice and Bob send items to the third party except that Alice wants to exchange
         // for a different object than Bob's
-        let scenario = send_to_escrow_with_overrides(ALICE_ADDRESS, BOB_ADDRESS, true, false, false);
+        let scenario = send_to_escrow_with_overrides(ALICE_ADDRESS, BOB_ADDRESS, true, false, false, false);
+        swap(&mut scenario, THIRD_PARTY_ADDRESS);
+        test_scenario::end(scenario);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = escrow::EMismatchedExchangeObject1)]
+    fun test_swap_wrong_objects2() {
+        // Both Alice and Bob send items to the third party except that Bob wants to exchange
+        // for a different object than Alice's
+        let scenario = send_to_escrow_with_overrides(ALICE_ADDRESS, BOB_ADDRESS, false, true, false, false);
+        swap(&mut scenario, THIRD_PARTY_ADDRESS);
+        test_scenario::end(scenario);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = escrow::EMismatchedExchangeObject1)]
+    fun test_swap_wrong_objects_both() {
+        // Both Alice and Bob send items to the third party except that both Alice and Bob want
+        // to exchange theirs for different objects than other
+        let scenario = send_to_escrow_with_overrides(ALICE_ADDRESS, BOB_ADDRESS, true, true, false, false);
         swap(&mut scenario, THIRD_PARTY_ADDRESS);
         test_scenario::end(scenario);
     }
@@ -109,7 +129,7 @@ module defi::escrow_tests {
     fun test_swap_wrong_recipient1() {
         // Both Alice and Bob send items to the third party except that Alice put a different
         // recipient than Bob
-        let scenario = send_to_escrow_with_overrides(ALICE_ADDRESS, BOB_ADDRESS, false, true, false);
+        let scenario = send_to_escrow_with_overrides(ALICE_ADDRESS, BOB_ADDRESS, false, false, true, false);
         swap(&mut scenario, THIRD_PARTY_ADDRESS);
         test_scenario::end(scenario);
     }
@@ -119,7 +139,7 @@ module defi::escrow_tests {
     fun test_swap_wrong_recipient2() {
         // Both Alice and Bob send items to the third party except that Bob put a different
         // recipient than Alice
-        let scenario = send_to_escrow_with_overrides(ALICE_ADDRESS, BOB_ADDRESS, false, false, true);
+        let scenario = send_to_escrow_with_overrides(ALICE_ADDRESS, BOB_ADDRESS, false, false, false, true);
         swap(&mut scenario, THIRD_PARTY_ADDRESS);
         test_scenario::end(scenario);
     }
@@ -129,7 +149,7 @@ module defi::escrow_tests {
     fun test_swap_wrong_recipient_both() {
         // Both Alice and Bob send items to the third party, except both also use
         // an incorrect recipient addresses.
-        let scenario = send_to_escrow_with_overrides(ALICE_ADDRESS, BOB_ADDRESS, false, true, true);
+        let scenario = send_to_escrow_with_overrides(ALICE_ADDRESS, BOB_ADDRESS, false, false, true, true);
         swap(&mut scenario, THIRD_PARTY_ADDRESS);
         test_scenario::end(scenario);
     }
@@ -150,13 +170,14 @@ module defi::escrow_tests {
         alice: address,
         bob: address,
     ): Scenario {
-        send_to_escrow_with_overrides(alice, bob, false, false, false)
+        send_to_escrow_with_overrides(alice, bob, false, false, false, false)
     }
 
     fun send_to_escrow_with_overrides(
         alice: address,
         bob: address,
-        override_exchange_for: bool,
+        override_exchange_for1: bool,
+        override_exchange_for2: bool,
         override_recipient1: bool,
         override_recipient2: bool,
     ): Scenario {
@@ -169,10 +190,13 @@ module defi::escrow_tests {
         let ctx = test_scenario::ctx(scenario);
         let item_b_versioned_id = object::new(ctx);
 
-        let item_a_id = object::uid_to_inner(&item_a_versioned_id);
         let item_b_id = object::uid_to_inner(&item_b_versioned_id);
-        if (override_exchange_for) {
+        if (override_exchange_for1) {
             item_b_id = object::id_from_address(RANDOM_ADDRESS);
+        };
+        let item_a_id = object::uid_to_inner(&item_a_versioned_id);
+        if (override_exchange_for2) {
+            item_a_id = object::id_from_address(OTHER_RAND_ADDRESS);
         };
 
         // Alice sends item A to the third party
