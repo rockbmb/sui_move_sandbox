@@ -202,7 +202,13 @@ sui client call \
 # let the escrow object above be exported as `SHIELD_ESCROW`
 
 sui client switch --address "$THIRD_PARTY"
-sui client call --package $PACKAGE --module escrow --function swap --args $SWORD_ESCROW $SHIELD_ESCROW --gas-budget 10000000 --type-args "$PACKAGE::simple_warrior::Sword" "$PACKAGE::simple_warrior::Shield"
+sui client call \
+  --package $PACKAGE \
+  --module escrow \
+  --function swap \
+  --args $SWORD_ESCROW $SHIELD_ESCROW \
+  --type-args "$PACKAGE::simple_warrior::Sword" "$PACKAGE::simple_warrior::Shield" \
+  --gas-budget 10000000
 ```
 
 ### Shared Escrow
@@ -212,3 +218,27 @@ a Sui Move object that has no owner, requiring no third-party.
 
 The API is slightly different, but the general pattern of invocation remains,
 just without the third-party.
+
+It is assumed the addresses from the previous example exist, and have already
+been `exported`, and the items from `simple_warrior` have been created.
+
+```bash
+sui client switch --address "$ALICE"
+sui client call \
+  --package "$PACKAGE" \
+  --module shared_escrow \
+  --function create \
+  --args "$BOB" "$SHIELD" "$SWORD" \
+  --type-args "$PACKAGE::simple_warrior::Sword" "$PACKAGE::simple_warrior::Shield" \
+  --gas-budget 10000000
+# let the escrow object created above be exported as `ESCROW`
+
+sui client switch --address "$BOB"
+sui client call \
+  --package $PACKAGE \
+  --module shared_escrow \
+  --function exchange \
+  --args $SHIELD $ESCROW \
+  --type-args "$PACKAGE::simple_warrior::Sword" "$PACKAGE::simple_warrior::Shield" \
+  --gas-budget 10000000
+```
