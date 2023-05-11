@@ -14,7 +14,8 @@ module defi::escrow_tests {
     const ALICE_ADDRESS: address = @0xACE;
     const BOB_ADDRESS: address = @0xACEB;
     const THIRD_PARTY_ADDRESS: address = @0xFACE;
-    const RANDOM_ADDRESS: address = @123;
+    const RANDOM_ADDRESS: address = @0x123;
+    const OTHER_RAND_ADDRESS: address = @0x456;
 
     // Error codes.
     const ESwapTransferFailed: u64 = 0;
@@ -98,17 +99,37 @@ module defi::escrow_tests {
     fun test_swap_wrong_objects() {
         // Both Alice and Bob send items to the third party except that Alice wants to exchange
         // for a different object than Bob's
-        let scenario = send_to_escrow_with_overrides(ALICE_ADDRESS, BOB_ADDRESS, true, false);
+        let scenario = send_to_escrow_with_overrides(ALICE_ADDRESS, BOB_ADDRESS, true, false, false);
         swap(&mut scenario, THIRD_PARTY_ADDRESS);
         test_scenario::end(scenario);
     }
 
     #[test]
     #[expected_failure(abort_code = escrow::EMismatchedSenderRecipient)]
-    fun test_swap_wrong_recipient() {
+    fun test_swap_wrong_recipient1() {
         // Both Alice and Bob send items to the third party except that Alice put a different
         // recipient than Bob
-        let scenario = send_to_escrow_with_overrides(ALICE_ADDRESS, BOB_ADDRESS, false, true);
+        let scenario = send_to_escrow_with_overrides(ALICE_ADDRESS, BOB_ADDRESS, false, true, false);
+        swap(&mut scenario, THIRD_PARTY_ADDRESS);
+        test_scenario::end(scenario);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = escrow::EMismatchedSenderRecipient)]
+    fun test_swap_wrong_recipient2() {
+        // Both Alice and Bob send items to the third party except that Bob put a different
+        // recipient than Alice
+        let scenario = send_to_escrow_with_overrides(ALICE_ADDRESS, BOB_ADDRESS, false, false, true);
+        swap(&mut scenario, THIRD_PARTY_ADDRESS);
+        test_scenario::end(scenario);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = escrow::EMismatchedSenderRecipient)]
+    fun test_swap_wrong_recipient_both() {
+        // Both Alice and Bob send items to the third party, except both also use
+        // an incorrect recipient addresses.
+        let scenario = send_to_escrow_with_overrides(ALICE_ADDRESS, BOB_ADDRESS, false, true, true);
         swap(&mut scenario, THIRD_PARTY_ADDRESS);
         test_scenario::end(scenario);
     }
@@ -127,14 +148,15 @@ module defi::escrow_tests {
         alice: address,
         bob: address,
     ): Scenario {
-        send_to_escrow_with_overrides(alice, bob, false, false)
+        send_to_escrow_with_overrides(alice, bob, false, false, false)
     }
 
     fun send_to_escrow_with_overrides(
         alice: address,
         bob: address,
         override_exchange_for: bool,
-        override_recipient: bool,
+        override_recipient1: bool,
+        override_recipient2: bool,
     ): Scenario {
         let new_scenario = test_scenario::begin(alice);
         let scenario = &mut new_scenario;
@@ -158,12 +180,12 @@ module defi::escrow_tests {
             let escrowed = ItemA {
                 id: item_a_versioned_id
             };
-            let recipient = bob;
-            if (override_recipient) {
-                recipient = RANDOM_ADDRESS;
+            let recipient1 = bob;
+            if (override_recipient1) {
+                recipient1 = RANDOM_ADDRESS;
             };
             escrow::create<ItemA, ItemB>(
-                recipient,
+                recipient1,
                 THIRD_PARTY_ADDRESS,
                 item_b_id,
                 escrowed,
@@ -178,8 +200,12 @@ module defi::escrow_tests {
             let escrowed = ItemB {
                 id: item_b_versioned_id
             };
+            let recipient2 = alice;
+            if (override_recipient2) {
+                recipient2 = OTHER_RAND_ADDRESS;
+            };
             escrow::create<ItemB, ItemA>(
-                alice,
+                recipient2,
                 THIRD_PARTY_ADDRESS,
                 item_a_id,
                 escrowed,

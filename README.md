@@ -154,7 +154,7 @@ Assuming
 * The shell variables
   - `ALICE`
   - `BOB`
-  - `THIRDPARTY`
+  - `THIRD_PARTY`
   - `PACKAGE`
   containing Sui object IDs have been/will be `export`, and are/will be available
 
@@ -186,7 +186,7 @@ sui client call \
   --function create \
   --module escrow \
   --package "$PACKAGE" \
-  --args "$BOB" "$THIRDPARTY" "$SHIELD" "$SWORD" \
+  --args "$BOB" "$THIRD_PARTY" "$SHIELD" "$SWORD" \
   --type-args "$PACKAGE::simple_warrior::Sword" "$PACKAGE::simple_warrior::Shield" \
   --gas-budget 10000000
 # let the escrow object above be exported as `SWORD_ESCROW`
@@ -196,12 +196,12 @@ sui client call \
   --function create \
   --module escrow \
   --package "$PACKAGE" \
-  --args "$ALICE" "$THIRDPARTY" "$SWORD" "$SHIELD" \
+  --args "$ALICE" "$THIRD_PARTY" "$SWORD" "$SHIELD" \
   --type-args "$PACKAGE::simple_warrior::Shield" "$PACKAGE::simple_warrior::Sword" \
   --gas-budget 10000000
 # let the escrow object above be exported as `SHIELD_ESCROW`
 
-sui client switch --address "$THIRDPARTY"
+sui client switch --address "$THIRD_PARTY"
 sui client call --package $PACKAGE --module escrow --function swap --args $SWORD_ESCROW $SHIELD_ESCROW --gas-budget 10000000 --type-args "$PACKAGE::simple_warrior::Sword" "$PACKAGE::simple_warrior::Shield"
 ```
 
