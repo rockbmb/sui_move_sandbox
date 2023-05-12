@@ -139,8 +139,10 @@ Sui Move examples of DeFi concepts.
 
 The examples here were taken from the [`sui`](https://github.com/MystenLabs/sui/tree/main/sui_programmability/examples/defi) repository.
 
-For now, there's an owned escrow in the `escrow.move` module, and test items to be
-exchanged in `simple_warrior.move`
+For now, there's
+* an owned escrow in the `escrow.move` module,
+* a shared escrow in `shared_escrow.move`, and
+* items to be created and test the escrow exchange with in `simple_warrior.move`
 
 ## Devnet testing
 

@@ -1,4 +1,4 @@
-//! Devnet test notes:
+//! Devnet test notes (deprecated, devnet has been wiped):
 //! Published by address 0x7b92450cdc8de8d032a4310934e34f64b4a16abc82f470514a57f0c25071c575
 //! with original package ID
 //! 0x74e8bb81b4f74ccb8421610f61a18fba08a5f0fd762679650e780647ab26c04b,
