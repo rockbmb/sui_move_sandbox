@@ -4,6 +4,8 @@
 //! Devnet testing notes:
 //! Published at
 //! 0x70756f3227e40eb405fd222b1c8ecf77f4c047c3d8449b2d33cd6d9d2b6784d7
+//! upgraded to
+//! 0xe8036a26f7b3cbc434ade3518b6d241889ae5545e5c1c4a58a4bed2f3666675f
 //! with `UpgradeCap`
 //! 0x801df82a667d1c1d25b395b9fc1c8e2ac7b438987f9bbe5d92528fc802cbe1ca
 //! by address

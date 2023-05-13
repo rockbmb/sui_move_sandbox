@@ -1,12 +1,13 @@
 [package]
 name = "DeFi"
 version = "0.0.1"
+published-at = "0x0f694930e41afda5443cb06aa5be658eb472041768b667a0179f1eab555f664b"
 
 [dependencies]
 MoveStdlib = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework/packages/move-stdlib", rev = "devnet" }
 Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework/packages/sui-framework", rev = "devnet" }
 
 [addresses]
-defi = "0x0"
+defi = "0x70756f3227e40eb405fd222b1c8ecf77f4c047c3d8449b2d33cd6d9d2b6784d7"
 std =  "0000000000000000000000000000000000000000000000000000000000000001"
 sui =  "0000000000000000000000000000000000000000000000000000000000000002"

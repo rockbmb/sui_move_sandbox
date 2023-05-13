@@ -18,26 +18,45 @@ A `TypeTag`, in the case of this module, would be something like
 and there would be an instance of each of these for every generic type parameter.
 */
 
+/*
+IMPORTANT
+
+If the escrow object is to be shared, it must not be passed by value.
+
+Otherwise, an error such as
+
+```
+Error calling module: Failure {
+    error: "CommandArgumentError { arg_idx: 1, kind: InvalidObjectByValue } in command 0",
+}
+```
+
+will result - cryptic, but it occurs due to passing a shared object by value to an
+entry function.
+*/
+
 /// An escrow for atomic swap of objects without a trusted third party
-module defi::shared_escrow {
-    use std::option::{Self, Option};
+module defi::paid_shared_escrow {
+    use sui::coin::{Self, Coin};
 
     use sui::object::{Self, ID, UID};
     use sui::transfer;
     use sui::tx_context::{Self, TxContext};
 
+    const EXCHANGE_FEE: u64 = 100_000;
+    const CANCEL_FEE: u64 = 10_000;
+
     /// An object held in escrow
     struct EscrowedObj<T: key + store, phantom ExchangeForT: key + store> has key, store {
         id: UID,
-        /// creator of the escrowed object - this object is shared, so it has
-        /// no owner.
+        /// creator of the escrowed object - it is shared, so has no owner.
         creator: address,
         /// intended recipient of the escrowed object
         recipient: address,
         /// ID of the object `creator` wants in exchange
         exchange_for: ID,
         /// the escrowed object
-        escrowed: Option<T>,
+        escrowed: T,
     }
 
     // Error codes
@@ -50,6 +69,9 @@ module defi::shared_escrow {
     /// The escrow has already been exchanged or cancelled
     const EAlreadyExchangedOrCancelled: u64 = 3;
 
+    const EExchangeFeeTooLow: u64 = 4;
+    const ECancelFeeTooLow: u64 = 5;
+
     /// Create an escrow for exchanging goods with a counterparty.
     public entry fun create<T: key + store, ExchangeForT: key + store>(
         recipient: address,
@@ -60,12 +82,11 @@ module defi::shared_escrow {
         // Whereas, the `escrowed_item` is passed by UID to relinquish ownership
         // from the transaction's sender, and award it to `EscrowedObj`.
         exchange_for: ID,
-        escrowed_item: T,
+        escrowed: T,
         ctx: &mut TxContext
     ) {
         let creator = tx_context::sender(ctx);
         let id = object::new(ctx);
-        let escrowed = option::some(escrowed_item);
         transfer::public_share_object(
             EscrowedObj<T, ExchangeForT> {
                 id, creator, recipient, exchange_for, escrowed
@@ -74,18 +95,32 @@ module defi::shared_escrow {
     }
 
     /// The `recipient` of the escrow can exchange `obj` with the escrowed item
-    public entry fun exchange<T: key + store, ExchangeForT: key + store>(
+    public entry fun exchange<T: key + store, ExchangeForT: key + store, C>(
         obj: ExchangeForT,
-        escrow: &mut EscrowedObj<T, ExchangeForT>,
-        ctx: &TxContext
+        escrow: EscrowedObj<T, ExchangeForT>,
+        deposit: Coin<C>,
+        ctx: &mut TxContext
     ) {
-        assert!(option::is_some(&escrow.escrowed), EAlreadyExchangedOrCancelled);
-        let escrowed_item = option::extract<T>(&mut escrow.escrowed);
-        assert!(&tx_context::sender(ctx) == &escrow.recipient, EWrongRecipient);
-        assert!(object::borrow_id(&obj) == &escrow.exchange_for, EWrongExchangeObject);
+        assert!(coin::value(&deposit) >= EXCHANGE_FEE, EExchangeFeeTooLow);
+
+        let EscrowedObj {
+                id,
+                creator,
+                recipient,
+                exchange_for,
+                escrowed
+            }: EscrowedObj<T, ExchangeForT> = escrow;
+        assert!(&tx_context::sender(ctx) == &recipient, EWrongRecipient);
+        assert!(object::borrow_id(&obj) == &exchange_for, EWrongExchangeObject);
         // everything matches. do the swap!
-        transfer::public_transfer(escrowed_item, tx_context::sender(ctx));
-        transfer::public_transfer(obj, escrow.creator);
+        transfer::public_transfer(escrowed, tx_context::sender(ctx));
+        transfer::public_transfer(obj, creator);
+
+        let creator_fee = coin::split(&mut deposit, EXCHANGE_FEE, ctx);
+        transfer::public_transfer(creator_fee, creator);
+        transfer::public_transfer(deposit, tx_context::sender(ctx));
+
+        object::delete(id);
     }
 
     /// The `creator` can cancel the escrow and get back the escrowed item.
@@ -93,12 +128,27 @@ module defi::shared_escrow {
     /// Note that this will not delete the escrowing object - it'll remain in
     /// existence, devoid of items, but available for future trades that respect the
     /// types it has already been instantiated with.
-    public entry fun cancel<T: key + store, ExchangeForT: key + store>(
-        escrow: &mut EscrowedObj<T, ExchangeForT>,
-        ctx: &TxContext
+    public entry fun cancel<T: key + store, ExchangeForT: key + store, C>(
+        escrow: EscrowedObj<T, ExchangeForT>,
+        deposit: Coin<C>,
+        ctx: &mut TxContext,
     ) {
-        assert!(&tx_context::sender(ctx) == &escrow.creator, EWrongOwner);
-        assert!(option::is_some(&escrow.escrowed), EAlreadyExchangedOrCancelled);
-        transfer::public_transfer(option::extract<T>(&mut escrow.escrowed), escrow.creator);
+        assert!(coin::value(&deposit) >= CANCEL_FEE, ECancelFeeTooLow);
+
+        let EscrowedObj {
+                id,
+                creator,
+                recipient: _recipient,
+                exchange_for: _exchange_for,
+                escrowed
+            }: EscrowedObj<T, ExchangeForT> = escrow;
+        assert!(&tx_context::sender(ctx) == &creator, EWrongOwner);
+        transfer::public_transfer(escrowed, creator);
+
+        let creator_fee = coin::split(&mut deposit, CANCEL_FEE, ctx);
+        transfer::public_transfer(creator_fee, creator);
+        transfer::public_transfer(deposit, tx_context::sender(ctx));
+
+        object::delete(id);
     }
 }
