@@ -38,6 +38,7 @@ entry function.
 /// An escrow for atomic swap of objects without a trusted third party
 module defi::paid_shared_escrow {
     use sui::coin::{Self, Coin};
+    use std::option::{Self, Option};
 
     use sui::object::{Self, ID, UID};
     use sui::transfer;
@@ -56,7 +57,7 @@ module defi::paid_shared_escrow {
         /// ID of the object `creator` wants in exchange
         exchange_for: ID,
         /// the escrowed object
-        escrowed: T,
+        escrowed: Option<T>,
     }
 
     // Error codes
@@ -82,11 +83,12 @@ module defi::paid_shared_escrow {
         // Whereas, the `escrowed_item` is passed by UID to relinquish ownership
         // from the transaction's sender, and award it to `EscrowedObj`.
         exchange_for: ID,
-        escrowed: T,
+        escrowed_item: T,
         ctx: &mut TxContext
     ) {
         let creator = tx_context::sender(ctx);
         let id = object::new(ctx);
+        let escrowed = option::some(escrowed_item);
         transfer::public_share_object(
             EscrowedObj<T, ExchangeForT> {
                 id, creator, recipient, exchange_for, escrowed
@@ -97,30 +99,25 @@ module defi::paid_shared_escrow {
     /// The `recipient` of the escrow can exchange `obj` with the escrowed item
     public entry fun exchange<T: key + store, ExchangeForT: key + store, C>(
         obj: ExchangeForT,
-        escrow: EscrowedObj<T, ExchangeForT>,
+        escrow: &mut EscrowedObj<T, ExchangeForT>,
         deposit: Coin<C>,
         ctx: &mut TxContext
     ) {
         assert!(coin::value(&deposit) >= EXCHANGE_FEE, EExchangeFeeTooLow);
 
-        let EscrowedObj {
-                id,
-                creator,
-                recipient,
-                exchange_for,
-                escrowed
-            }: EscrowedObj<T, ExchangeForT> = escrow;
-        assert!(&tx_context::sender(ctx) == &recipient, EWrongRecipient);
-        assert!(object::borrow_id(&obj) == &exchange_for, EWrongExchangeObject);
-        // everything matches. do the swap!
-        transfer::public_transfer(escrowed, tx_context::sender(ctx));
-        transfer::public_transfer(obj, creator);
+        assert!(option::is_some(&escrow.escrowed), EAlreadyExchangedOrCancelled);
+        let escrowed_item = option::extract<T>(&mut escrow.escrowed);
 
-        let creator_fee = coin::split(&mut deposit, EXCHANGE_FEE, ctx);
-        transfer::public_transfer(creator_fee, creator);
+        assert!(&tx_context::sender(ctx) == &escrow.recipient, EWrongRecipient);
+        assert!(object::borrow_id(&obj) == &escrow.exchange_for, EWrongExchangeObject);
+        // everything matches. do the swap!
+        transfer::public_transfer(escrowed_item, tx_context::sender(ctx));
+        transfer::public_transfer(obj, escrow.creator);
+
+        let creator_fee = coin::split(&mut deposit, EXCHANGE_FEE / 2, ctx);
+        transfer::public_transfer(creator_fee, escrow.creator);
         transfer::public_transfer(deposit, tx_context::sender(ctx));
 
-        object::delete(id);
     }
 
     /// The `creator` can cancel the escrow and get back the escrowed item.
@@ -129,26 +126,17 @@ module defi::paid_shared_escrow {
     /// existence, devoid of items, but available for future trades that respect the
     /// types it has already been instantiated with.
     public entry fun cancel<T: key + store, ExchangeForT: key + store, C>(
-        escrow: EscrowedObj<T, ExchangeForT>,
+        escrow: &mut EscrowedObj<T, ExchangeForT>,
         deposit: Coin<C>,
         ctx: &mut TxContext,
     ) {
         assert!(coin::value(&deposit) >= CANCEL_FEE, ECancelFeeTooLow);
-
-        let EscrowedObj {
-                id,
-                creator,
-                recipient: _recipient,
-                exchange_for: _exchange_for,
-                escrowed
-            }: EscrowedObj<T, ExchangeForT> = escrow;
-        assert!(&tx_context::sender(ctx) == &creator, EWrongOwner);
-        transfer::public_transfer(escrowed, creator);
+        assert!(&tx_context::sender(ctx) == &escrow.creator, EWrongOwner);
+        assert!(option::is_some(&escrow.escrowed), EAlreadyExchangedOrCancelled);
+        transfer::public_transfer(option::extract<T>(&mut escrow.escrowed), escrow.creator);
 
         let creator_fee = coin::split(&mut deposit, CANCEL_FEE, ctx);
-        transfer::public_transfer(creator_fee, creator);
+        transfer::public_transfer(creator_fee, escrow.creator);
         transfer::public_transfer(deposit, tx_context::sender(ctx));
-
-        object::delete(id);
     }
 }
