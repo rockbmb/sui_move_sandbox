@@ -44,6 +44,14 @@ module defi::paid_shared_escrow {
     use sui::transfer;
     use sui::tx_context::{Self, TxContext};
 
+    /// The minimum required fee to trade with the escrow.
+    /// It will return half of this amount to the second trading party,
+    /// and the send the rest to the escrow's creator.
+    ///
+    /// This doesn't make much sense, but this is just a prototype for testing.
+    /// Doing this allows us to also test the flash loan module in combination with this one:
+    /// * a party has some, but not all of the funds required to call the exchange function
+    /// * it uses a flash loan to get the remained, obtain the item, and pay back the loan
     const EXCHANGE_FEE: u64 = 100_000;
     const CANCEL_FEE: u64 = 10_000;
 

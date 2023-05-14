@@ -21,7 +21,10 @@ module defi::paid_shared_escrow_tests {
 
     // Error codes.
     const ESwapTransferFailed: u64 = 0;
-    const EReturnTransferFailed: u64 = 0;
+    const EReturnTransferFailed: u64 = 1;
+    const ECreatorAlreadyHasFees: u64 = 2;
+    const ECreatorDidNotReceiveFees: u64 = 3;
+    const EWrongCreatorFee: u64 = 4;
 
     // Example of an object type used for exchange
     struct ItemA has key, store {
@@ -38,14 +41,31 @@ module defi::paid_shared_escrow_tests {
         // Alice creates the escrow
         let (scenario_val, item_b) = create_escrow(ALICE_ADDRESS, BOB_ADDRESS);
 
+        assert!(
+            !test_scenario::has_most_recent_for_address<Coin<SUI>>(ALICE_ADDRESS),
+            ECreatorAlreadyHasFees
+        );
+
         // Bob exchanges item B for the escrowed item A
-        let scenario = &mut scenario_val;
-        fund_account(scenario, BOB_ADDRESS, EXCHANGE_FEE);
+        test_scenario::next_tx(&mut scenario_val, BOB_ADDRESS);
+        fund_account(&mut scenario_val, BOB_ADDRESS, EXCHANGE_FEE);
         exchange(&mut scenario_val, BOB_ADDRESS, item_b);
+        test_scenario::next_tx(&mut scenario_val, BOB_ADDRESS);
 
         // Alice now owns item B, and Bob now owns item A
         assert!(owns_object<ItemB>(ALICE_ADDRESS), ESwapTransferFailed);
         assert!(owns_object<ItemA>(BOB_ADDRESS), ESwapTransferFailed);
+
+        assert!(
+            test_scenario::has_most_recent_for_address<Coin<SUI>>(ALICE_ADDRESS),
+            ECreatorDidNotReceiveFees
+        );
+        let scenario = &mut scenario_val;
+        let coin = test_scenario::take_from_address<Coin<SUI>>(scenario, ALICE_ADDRESS);
+        // The escrow creator demands EXCHANGE_FEE when exchanging an item,
+        // but will return half, and keep the rest.
+        assert!(coin::value(&coin) == EXCHANGE_FEE / 2, EWrongCreatorFee);
+        test_scenario::return_to_address(ALICE_ADDRESS, coin);
 
         test_scenario::end(scenario_val);
     }
@@ -105,11 +125,10 @@ module defi::paid_shared_escrow_tests {
     fun test_swap_wrong_recipient() {
          // Alice creates the escrow in exchange for item b
         let (scenario_val, item_b) = create_escrow(ALICE_ADDRESS, BOB_ADDRESS);
-        let scenario = &mut scenario_val;
 
-        fund_account(scenario, RANDOM_ADDRESS, EXCHANGE_FEE);
+        fund_account(&mut scenario_val, RANDOM_ADDRESS, EXCHANGE_FEE);
         // Random address tries to exchange item B for the escrowed item A and expects failure
-        exchange(scenario, RANDOM_ADDRESS, item_b);
+        exchange(&mut scenario_val, RANDOM_ADDRESS, item_b);
 
         test_scenario::end(scenario_val);
     }
@@ -119,12 +138,21 @@ module defi::paid_shared_escrow_tests {
     fun test_swap_low_fee() {
          // Alice creates the escrow in exchange for item b
         let (scenario_val, item_b) = create_escrow(ALICE_ADDRESS, BOB_ADDRESS);
-        let scenario = &mut scenario_val;
+        assert!(
+            !test_scenario::has_most_recent_for_address<Coin<SUI>>(ALICE_ADDRESS),
+            ECreatorAlreadyHasFees
+        );
 
-        fund_account(scenario, BOB_ADDRESS, EXCHANGE_FEE - 1);
+        fund_account(&mut scenario_val, BOB_ADDRESS, EXCHANGE_FEE - 1);
         // Bob attempts to use the escrow without paying the full usage fee
         // set by its creator.
+        let scenario = &mut scenario_val;
         exchange(scenario, BOB_ADDRESS, item_b);
+
+        assert!(
+            !test_scenario::has_most_recent_for_address<Coin<SUI>>(ALICE_ADDRESS),
+            ECreatorAlreadyHasFees
+        );
 
         test_scenario::end(scenario_val);
     }
@@ -163,7 +191,6 @@ module defi::paid_shared_escrow_tests {
         test_scenario::next_tx(scenario, initiator);
     }
 
-
     fun exchange(scenario: &mut Scenario, bob: address, item_b: ItemB) {
         test_scenario::next_tx(scenario, bob);
         {
@@ -174,7 +201,6 @@ module defi::paid_shared_escrow_tests {
             paid_shared_escrow::exchange(item_b, escrow, coin, ctx);
             test_scenario::return_shared(escrow_val);
         };
-        test_scenario::next_tx(scenario, bob);
     }
 
     fun create_escrow(
@@ -209,10 +235,15 @@ module defi::paid_shared_escrow_tests {
         (new_scenario, item_b)
     }
 
+    /// Fund an account for testing purposes.
+    ///
+    /// The shared escrow from the module being tested requires a fee,
+    /// and the possibility of it being too low for the exchange needs to be
+    /// tested too. As such, the amount is a parameter to this function.
     fun fund_account(scenario: &mut Scenario, acc: address, amount: u64) {
         let ctx = test_scenario::ctx(scenario);
         let coin = coin::mint_for_testing<SUI>(amount, ctx);
-        transfer::public_transfer(coin, acc)
+        transfer::public_transfer(coin, acc);
     }
 
     fun owns_object<T: key + store>(owner: address): bool {
