@@ -71,7 +71,6 @@ module defi::paid_shared_escrow {
     const EAlreadyExchangedOrCancelled: u64 = 3;
 
     const EExchangeFeeTooLow: u64 = 4;
-    const ECancelFeeTooLow: u64 = 5;
 
     /// Create an escrow for exchanging goods with a counterparty.
     public entry fun create<T: key + store, ExchangeForT: key + store>(
@@ -125,18 +124,12 @@ module defi::paid_shared_escrow {
     /// Note that this will not delete the escrowing object - it'll remain in
     /// existence, devoid of items, but available for future trades that respect the
     /// types it has already been instantiated with.
-    public entry fun cancel<T: key + store, ExchangeForT: key + store, C>(
+    public entry fun cancel<T: key + store, ExchangeForT: key + store>(
         escrow: &mut EscrowedObj<T, ExchangeForT>,
-        deposit: Coin<C>,
         ctx: &mut TxContext,
     ) {
-        assert!(coin::value(&deposit) >= CANCEL_FEE, ECancelFeeTooLow);
         assert!(&tx_context::sender(ctx) == &escrow.creator, EWrongOwner);
         assert!(option::is_some(&escrow.escrowed), EAlreadyExchangedOrCancelled);
         transfer::public_transfer(option::extract<T>(&mut escrow.escrowed), escrow.creator);
-
-        let creator_fee = coin::split(&mut deposit, CANCEL_FEE, ctx);
-        transfer::public_transfer(creator_fee, escrow.creator);
-        transfer::public_transfer(deposit, tx_context::sender(ctx));
     }
 }
