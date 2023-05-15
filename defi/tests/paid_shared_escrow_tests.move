@@ -9,6 +9,7 @@ module defi::paid_shared_escrow_tests {
     use sui::test_scenario::{Self, Scenario};
     use sui::transfer;
 
+    use defi::flash_lender::{Self, FlashLender};
     use defi::paid_shared_escrow::{Self, EscrowedObj};
 
     const ALICE_ADDRESS: address = @0xACE;
@@ -25,6 +26,8 @@ module defi::paid_shared_escrow_tests {
     const ECreatorAlreadyHasFees: u64 = 2;
     const ECreatorDidNotReceiveFees: u64 = 3;
     const EWrongCreatorFee: u64 = 4;
+    const ENoBorrowerFunds: u64 = 5;
+    const EEarlyBorrowerFunds: u64 = 6;
 
     // Example of an object type used for exchange
     struct ItemA has key, store {
@@ -66,6 +69,86 @@ module defi::paid_shared_escrow_tests {
         // but will return half, and keep the rest.
         assert!(coin::value(&coin) == EXCHANGE_FEE / 2, EWrongCreatorFee);
         test_scenario::return_to_address(ALICE_ADDRESS, coin);
+
+        test_scenario::end(scenario_val);
+    }
+
+    const LOAN_FEE: u64 = 1;
+    const LOAN_AMOUNT: u64 = 10;
+
+    #[test]
+    /// Somewhat contrived scenario, mixing both a paid shared escrow, and flash loans.
+    /// In this scenario:
+    /// * Alice and Bob wish to exchange items, for which Alice sets up a paid shared
+    ///   escrow that requires a fee to use, compensating its creator for the cost
+    ///   of setting it up
+    /// * An admin sets up a flash loan giving object
+    /// * Bob has enough funds to perform the exchange, but for the purposes of this scenario,
+    ///   cannot use all of them, taking out a flash loan
+    /// * after taking out the loan and performing the exchange, Bob returns the loan, plus
+    ///   the fee
+    fun paid_escrow_flash_loan_example() {
+        let admin = @0x1;
+        let borrower = BOB_ADDRESS;
+
+        // Alice creates the escrow
+        let (scenario_val, item_b) = create_escrow(ALICE_ADDRESS, BOB_ADDRESS);
+
+        // admin creates a flash lender with 100 coins and a fee of 1 coin
+        let scenario = &mut scenario_val;
+        test_scenario::next_tx(scenario, admin);
+        {
+            let ctx = test_scenario::ctx(scenario);
+            let coin = coin::mint_for_testing<SUI>(LOAN_AMOUNT, ctx);
+            flash_lender::create(coin, LOAN_FEE, ctx);
+        };
+        test_scenario::next_tx(scenario, admin);
+
+        assert!(!owns_object<Coin<SUI>>(borrower), ENoBorrowerFunds);
+        {
+            fund_account(scenario, borrower, LOAN_AMOUNT + LOAN_FEE);
+        };
+        // Funds will only be accessible by the borrower's address after
+        // `next_tx` has been called, updating the test's global storage simulation.
+        assert!(!owns_object<Coin<SUI>>(borrower), ENoBorrowerFunds);
+        test_scenario::next_tx(scenario, borrower);
+        assert!(owns_object<Coin<SUI>>(borrower), ENoBorrowerFunds);
+
+        test_scenario::next_tx(scenario, borrower);
+        {
+            let lender_val = test_scenario::take_shared<FlashLender<SUI>>(scenario);
+            let escrow_val = test_scenario::take_shared<EscrowedObj<ItemA, ItemB>>(scenario);
+
+            let ctx = test_scenario::ctx(scenario);
+            let borrower_funds = coin::mint_for_testing<SUI>(EXCHANGE_FEE - LOAN_AMOUNT, ctx);
+
+            let lender = &mut lender_val;
+            let (loan, receipt) = flash_lender::loan(lender, LOAN_AMOUNT, ctx);
+
+            coin::join(&mut borrower_funds, loan);
+            let escrow = &mut escrow_val;
+            paid_shared_escrow::exchange(item_b, escrow, borrower_funds, ctx);
+            test_scenario::return_shared(escrow_val);
+
+            let rem_funds = test_scenario::take_from_address<Coin<SUI>>(scenario, borrower);
+            flash_lender::repay(lender, rem_funds, receipt);
+            test_scenario::return_shared(lender_val);
+        };
+        test_scenario::next_tx(scenario, borrower);
+
+        // Alice now owns item B, and Bob now owns item A
+        assert!(owns_object<ItemB>(ALICE_ADDRESS), ESwapTransferFailed);
+        assert!(owns_object<ItemA>(BOB_ADDRESS), ESwapTransferFailed);
+
+        // Alice has received the escrow's exchange fee
+        let coin = test_scenario::take_from_address<Coin<SUI>>(scenario, ALICE_ADDRESS);
+        assert!(coin::value(&coin) == EXCHANGE_FEE / 2, EWrongCreatorFee);
+        test_scenario::return_to_address(ALICE_ADDRESS, coin);
+
+        // Bob's funds reflect the exchange fee.
+        let coin = test_scenario::take_from_address<Coin<SUI>>(scenario, BOB_ADDRESS);
+        assert!(coin::value(&coin) == EXCHANGE_FEE / 2, EWrongCreatorFee);
+        test_scenario::return_to_address(borrower, coin);
 
         test_scenario::end(scenario_val);
     }
